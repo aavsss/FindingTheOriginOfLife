@@ -52,3 +52,4 @@ def PatternCount(Pattern, String):
 #Regex to count the no. of occurences
 # Finally, print the sum of count_1 and count_2
 # print (len(re.findall('(?=' + "ATGATCAAG" + ')', Text)) + len(re.findall('(?=' + "CTTGATCAT" + ')', Text)))
+
