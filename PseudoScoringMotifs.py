@@ -1,7 +1,5 @@
-#TODO Differentiate betwee pseudo and exact methods on finding motifs.
 import random
 
-#Pre-condition: A list of strings as sent as an input
 # Input:
 #     AACGTA
 #     CCCGTT
@@ -9,8 +7,9 @@ import random
 #     GGATTA
 #     TTCCGG
 # Output:
-#     {'A': [1, 2, 1, 0, 0, 2], 'C': [2, 1, 4, 2, 0, 0], 'G': [1, 1, 0, 2, 1, 1], 'T': [1, 1, 0, 1, 4, 2]}
-def get_count_matrix(motifs):
+#     {'A': [2, 3, 2, 1, 1, 3], 'C': [3, 2, 5, 3, 1, 1], 'T': [2, 2, 1, 2, 5, 3], 'G': [2, 2, 1, 3, 2, 2]}
+#Adding 1 to each element in the count matrix
+def get_pseudo_count_matrix(motifs):
     #Initiaze count matrix as a dictionary
     count = {}
 
@@ -20,7 +19,7 @@ def get_count_matrix(motifs):
     for symbol in "ACGT":
         count[symbol] = []
         for j in range(k):
-            count[symbol].append(0)
+            count[symbol].append(1)
 
     #Ranging over all elements symbol=Motifs[i][j] of the count matrix 
     #and add 1 to count[symbol][j]
@@ -38,20 +37,19 @@ def get_count_matrix(motifs):
 #     GGATTA
 #     TTCCGG
 # Output:
-#     {'A': [0.2, 0.4, 0.2, 0.0, 0.0, 0.4], 'C': [0.4, 0.2, 0.8, 0.4, 0.0, 0.0], 'G': [0.2, 0.2, 0.0, 0.4, 0.2, 0.2], 'T': [0.2, 0.2, 0.0, 0.2, 0.8, 0.4]}
-
-def get_profile_matrix(motifs):
+#     {'A': [0.2222222222222222, 0.3333333333333333, 0.2222222222222222, 0.1111111111111111, 0.1111111111111111, 0.3333333333333333], 'C': [0.3333333333333333, 0.2222222222222222, 0.5555555555555556, 0.3333333333333333, 0.1111111111111111, 0.1111111111111111], 'T': [0.2222222222222222, 0.2222222222222222, 0.1111111111111111, 0.2222222222222222, 0.5555555555555556, 0.3333333333333333], 'G': [0.2222222222222222, 0.2222222222222222, 0.1111111111111111, 0.3333333333333333, 0.2222222222222222, 0.2222222222222222]}
+#We are adding an extra 1 count to each group in the output (GCAT), not to each element in the motif.  
+def get_pseudo_profile_matrix(motifs):
     t = len(motifs)
     k = len(motifs[0])
 
-    profile = get_count_matrix(motifs)
+    psuedo_profile = get_pseudo_count_matrix(motifs)
 
-    for key in profile:
+    for key in psuedo_profile:
         for i in range(k):
-            profile[key][i] = profile[key][i]/t
+            psuedo_profile[key][i] /= (t+4) #t+4 because adding extra 1 to each group in the output
 
-    return profile
-
+    return psuedo_profile
 
 # Input:
 #     AACGTA
@@ -64,7 +62,7 @@ def get_profile_matrix(motifs):
 
 def get_consensus_string(motifs):
     k = len(motifs[0])
-    count_matrix = get_count_matrix(motifs)
+    count_matrix = get_pseudo_count_matrix(motifs)
 
     #The string
     consensus = ""
@@ -79,7 +77,7 @@ def get_consensus_string(motifs):
 
     return consensus
 
-# Input:
+    # Input:
 #     AACGTA
 #     CCCGTT
 #     CACCTT
@@ -157,7 +155,7 @@ def search_greedy_motif(dna,k,t):
         motifs = []
         motifs.append(dna[0][i:i+k])
         for j in range(1,t):
-            p = get_profile_matrix(motifs[0:j])
+            p = get_pseudo_profile_matrix(motifs[0:j])
             motifs.append(compute_profile_most_probable_kmer(dna[j], k, p))
         if compute_score(motifs) < compute_score(best_motifs):
             best_motifs = motifs
@@ -197,38 +195,33 @@ def generate_random_kmer_from_strings(dna,k,t):
         random_kmers.append(dna[i][r:r+k])
     return random_kmers
 
+def compute_randomized_motif_search(dna,k,t):
+    m = generate_random_kmer_from_strings(dna,k,t)
+    best_motifs = m
 
-# Input:
-#     ACCTGTTTATTGCCTAAGTTCCGAACAAACCCAATATAGCCCGAGGGCCT
-#     5
-#     0.2 0.2 0.3 0.2 0.3
-#     0.4 0.3 0.1 0.5 0.1
-#     0.3 0.3 0.5 0.2 0.4
-#     0.1 0.2 0.1 0.1 0.2
-# Output:
-#     CCGAG
-profile_matrix = {"A": [0.4,0.3,0.0,0.1,0.0,0.9],
-                "C": [0.2,0.3,0.0,0.4,0.0,0.1],
-                "G": [0.1,0.3,1.0,0.3,0.5,0.0],
-                "T": [0.3,0.1,0.0,0.4,0.5,0.0]}
-print(compute_probability("GAGCTA", profile_matrix))
+    while True:
+        profile = get_pseudo_profile_matrix(m)
+        m = compute_motifs(profile,dna)
+        if compute_score(m) < compute_score(best_motifs):
+            best_motifs = m
+        else:
+            return best_motifs
 
-# text = "ACCTGTTTATTGCCTAAGTTCCGAACAAACCCAATATAGCCCGAGGGCCT"
-# print(compute_profile_most_probable_kmer(text, 5, profile_matrix))
+#Call RandomizedMotifSearch(dna,k,t) N times, storing the best-scoring set of motifs
+def RepeatedRandomizedMotifSearch(dna, k, t):
+    BestScore = float('inf')
+    BestMotifs = []
+    N = 100
+    for i in range(N):
+        Motifs = compute_randomized_motif_search(dna, k, t)
+        CurrScore = compute_score(Motifs)
+        if CurrScore < BestScore:
+            BestScore = CurrScore
+            BestMotifs = Motifs
+    return BestMotifs
 
-dna = ["GCGCCCCGCCCGGACAGCCATGCGCTAACCCTGGCTTCGATGGCGCCGGCTCAGTTAGGGCCGGAAGTCCCCAATGTGGCAGACCTTTCGCCCCTGGCGGACGAATGACCCCAGTGGCCGGGACTTCAGGCCCTATCGGAGGGCTCCGGCGCGGTGGTCGGATTTGTCTGTGGAGGTTACACCCCAATCGCAAGGATGCATTATGACCAGCGAGCTGAGCCTGGTCGCCACTGGAAAGGGGAGCAACATC",
-        "CCGATCGGCATCACTATCGGTCCTGCGGCCGCCCATAGCGCTATATCCGGCTGGTGAAATCAATTGACAACCTTCGACTTTGAGGTGGCCTACGGCGAGGACAAGCCAGGCAAGCCAGCTGCCTCAACGCGCGCCAGTACGGGTCCATCGACCCGCGGCCCACGGGTCAAACGACCCTAGTGTTCGCTACGACGTGGTCGTACCTTCGGCAGCAGATCAGCAATAGCACCCCGACTCGAGGAGGATCCCG",
-        "ACCGTCGATGTGCCCGGTCGCGCCGCGTCCACCTCGGTCATCGACCCCACGATGAGGACGCCATCGGCCGCGACCAAGCCCCGTGAAACTCTGACGGCGTGCTGGCCGGGCTGCGGCACCTGATCACCTTAGGGCACTTGGGCCACCACAACGGGCCGCCGGTCTCGACAGTGGCCACCACCACACAGGTGACTTCCGGCGGGACGTAAGTCCCTAACGCGTCGTTCCGCACGCGGTTAGCTTTGCTGCC",
-        "GGGTCAGGTATATTTATCGCACACTTGGGCACATGACACACAAGCGCCAGAATCCCGGACCGAACCGAGCACCGTGGGTGGGCAGCCTCCATACAGCGATGACCTGATCGATCATCGGCCAGGGCGCCGGGCTTCCAACCGTGGCCGTCTCAGTACCCAGCCTCATTGACCCTTCGACGCATCCACTGCGCGTAAGTCGGCTCAACCCTTTCAAACCGCTGGATTACCGACCGCAGAAAGGGGGCAGGAC",
-        "GTAGGTCAAACCGGGTGTACATACCCGCTCAATCGCCCAGCACTTCGGGCAGATCACCGGGTTTCCCCGGTATCACCAATACTGCCACCAAACACAGCAGGCGGGAAGGGGCGAAAGTCCCTTATCCGACAATAAAACTTCGCTTGTTCGACGCCCGGTTCACCCGATATGCACGGCGCCCAGCCATTCGTGACCGACGTCCCCAGCCCCAAGGCCGAACGACCCTAGGAGCCACGAGCAATTCACAGCG",
-        "CCGCTGGCGACGCTGTTCGCCGGCAGCGTGCGTGACGACTTCGAGCTGCCCGACTACACCTGGTGACCACCGCCGACGGGCACCTCTCCGCCAGGTAGGCACGGTTTGTCGCCGGCAATGTGACCTTTGGGCGCGGTCTTGAGGACCTTCGGCCCCACCCACGAGGCCGCCGCCGGCCGATCGTATGACGTGCAATGTACGCCATAGGGTGCGTGTTACGGCGATTACCTGAAGGCGGCGGTGGTCCGGA",
-        "GGCCAACTGCACCGCGCTCTTGATGACATCGGTGGTCACCATGGTGTCCGGCATGATCAACCTCCGCTGTTCGATATCACCCCGATCTTTCTGAACGGCGGTTGGCAGACAACAGGGTCAATGGTCCCCAAGTGGATCACCGACGGGCGCGGACAAATGGCCCGCGCTTCGGGGACTTCTGTCCCTAGCCCTGGCCACGATGGGCTGGTCGGATCAAAGGCATCCGTTTCCATCGATTAGGAGGCATCAA",
-        "GTACATGTCCAGAGCGAGCCTCAGCTTCTGCGCAGCGACGGAAACTGCCACACTCAAAGCCTACTGGGCGCACGTGTGGCAACGAGTCGATCCACACGAAATGCCGCCGTTGGGCCGCGGACTAGCCGAATTTTCCGGGTGGTGACACAGCCCACATTTGGCATGGGACTTTCGGCCCTGTCCGCGTCCGTGTCGGCCAGACAAGCTTTGGGCATTGGCCACAATCGGGCCACAATCGAAAGCCGAGCAG",
-        "GGCAGCTGTCGGCAACTGTAAGCCATTTCTGGGACTTTGCTGTGAAAAGCTGGGCGATGGTTGTGGACCTGGACGAGCCACCCGTGCGATAGGTGAGATTCATTCTCGCCCTGACGGGTTGCGTCTGTCATCGGTCGATAAGGACTAACGGCCCTCAGGTGGGGACCAACGCCCCTGGGAGATAGCGGTCCCCGCCAGTAACGTACCGCTGAACCGACGGGATGTATCCGCCCCAGCGAAGGAGACGGCG",
-        "TCAGCACCATGACCGCCTGGCCACCAATCGCCCGTAACAAGCGGGACGTCCGCGACGACGCGTGCGCTAGCGCCGTGGCGGTGACAACGACCAGATATGGTCCGAGCACGCGGGCGAACCTCGTGTTCTGGCCTCGGCCAGTTGTGTAGAGCTCATCGCTGTCATCGAGCGATATCCGACCACTGATCCAAGTCGGGGGCTCTGGGGACCGAAGTCCCCGGGCTCGGAGCTATCGGACCTCACGATCACC"]
+# BestMotifs = RepeatedRandomizedMotifSearch(dna, k, t)
+# # Print the BestMotifs variable
+# print(BestMotifs)
+# print(compute_score(BestMotifs))
 
-t = len(dna)
-k = 15
-motifs = search_greedy_motif(dna,k,t)
-print(motifs)
-print(compute_score(motifs))
