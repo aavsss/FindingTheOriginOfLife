@@ -186,17 +186,6 @@ def compute_motifs(profile_matrix, dna, k):
         motifs.append(compute_profile_most_probable_kmer(dna[i], k, profile_matrix))
     return motifs
 
-#t = len(dna)
-#k: k-mer
-#dna: list of strings dna
-#RandomMotifs
-def generate_random_kmer_from_strings(dna,k,t):
-    random_kmers = []
-    for i in range(t):
-        r = random.randint(0,len(dna[0])-k)
-        random_kmers.append(dna[i][r:r+k])
-    return random_kmers
-
 
 # Input:
 #     ACCTGTTTATTGCCTAAGTTCCGAACAAACCCAATATAGCCCGAGGGCCT
