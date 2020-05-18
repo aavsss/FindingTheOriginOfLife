@@ -1,4 +1,3 @@
-#TODO Differentiate betwee pseudo and exact methods on finding motifs.
 import random
 
 #Pre-condition: A list of strings as sent as an input
@@ -9,7 +8,11 @@ import random
 #     GGATTA
 #     TTCCGG
 # Output:
-#     {'A': [1, 2, 1, 0, 0, 2], 'C': [2, 1, 4, 2, 0, 0], 'G': [1, 1, 0, 2, 1, 1], 'T': [1, 1, 0, 1, 4, 2]}
+#     {'A': [1, 2, 1, 0, 0, 2], 
+#      'C': [2, 1, 4, 2, 0, 0], 
+#      'G': [1, 1, 0, 2, 1, 1], 
+#      'T': [1, 1, 0, 1, 4, 2]}
+# Computes number of nucleotides in each column
 def get_count_matrix(motifs):
     #Initiaze count matrix as a dictionary
     count = {}
@@ -38,8 +41,12 @@ def get_count_matrix(motifs):
 #     GGATTA
 #     TTCCGG
 # Output:
-#     {'A': [0.2, 0.4, 0.2, 0.0, 0.0, 0.4], 'C': [0.4, 0.2, 0.8, 0.4, 0.0, 0.0], 'G': [0.2, 0.2, 0.0, 0.4, 0.2, 0.2], 'T': [0.2, 0.2, 0.0, 0.2, 0.8, 0.4]}
-
+#     {'A': [0.2, 0.4, 0.2, 0.0, 0.0, 0.4], 
+#      'C': [0.4, 0.2, 0.8, 0.4, 0.0, 0.0], 
+#      'G': [0.2, 0.2, 0.0, 0.4, 0.2, 0.2], 
+#      'T': [0.2, 0.2, 0.0, 0.2, 0.8, 0.4]}
+# Computed by divided the number of nucleotides in each column by the total no. of rows. 
+# Sum of each column should be 1
 def get_profile_matrix(motifs):
     t = len(motifs)
     k = len(motifs[0])
@@ -53,15 +60,22 @@ def get_profile_matrix(motifs):
     return profile
 
 
+# Takes the count matrix and prints out a string which has the most value in each column
+# If two nucleotides have same count number then a nucleotide is selected randomly. 
 # Input:
 #     AACGTA
 #     CCCGTT
 #     CACCTT
 #     GGATTA
 #     TTCCGG
+# Count Matrix:
+#     {'A': [2, 3, 2, 1, 1, 3],
+#      'C': [3, 2, 5, 3, 1, 1], 
+#      'T': [2, 2, 1, 2, 5, 3], 
+#      'G': [2, 2, 1, 3, 2, 2]}
 # Output:
-#     CACCTA
-
+#  Consensus String:
+#   CACCTA
 def get_consensus_string(motifs):
     k = len(motifs[0])
     count_matrix = get_count_matrix(motifs)
@@ -79,13 +93,16 @@ def get_consensus_string(motifs):
 
     return consensus
 
+# Takes in the consensus string and computes how many nucleotides are off in each column
 # Input:
 #     AACGTA
 #     CCCGTT
 #     CACCTT
 #     GGATTA
 #     TTCCGG
+# Consensus String: CACCTA 
 # Output:
+#     3+3+1+3+1+3  
 #     14
 def compute_score(motifs):
     consensus_string = get_consensus_string(motifs)
@@ -114,12 +131,16 @@ def compute_score(motifs):
 # we set p equal to p times the value of Profile corresponding to symbol
 # Text[i] and column i, which is just Profile[Text[i]][i].
 #The probability that a profile matrix will produce a given string is given by the product of individual nucleotide probabilities.
+#Computes probability of the k-mer occuring. 
+# Multiplies the probability of nucleotide in each column
 def compute_probability(text, profile_matrix):
     probability = 1
     for i in range(len(text)):
         probability *= profile_matrix[text[i]][i]
     return probability
 
+#Computes the most probable kmer based on the profile matrix
+# Compares probability of each kmer
 def compute_profile_most_probable_kmer(text, k, profile_matrix):
     max_probability = -1
     result = ""
@@ -131,7 +152,7 @@ def compute_profile_most_probable_kmer(text, k, profile_matrix):
             max_probability = temp_probability
     return result
 
-# Test 0 # Sample Dataset (your code is not run on this dataset)
+# Test 0 # Sample Dataset 
 # Input:
 #     3 5
 #     GGCGTTCAGGCA
@@ -147,6 +168,12 @@ def compute_profile_most_probable_kmer(text, k, profile_matrix):
 #     CAA
 # t = number of k-mers in dna
 #http://www.mrgraeme.co.uk/greedy-motif-search/
+#Steps:
+# First k-mer is extracted from each string and is assigned as the best motif
+# In each iteration of seletecting every kmer from the string
+# New profile matrix is build after making motifs from each string(row) of DNA
+# Next motif is added based on the newly created profile matrix
+# Motif with the least score is iniialized as the best motif. 
 def search_greedy_motif(dna,k,t):
     best_motifs = []
     for i in range(1,t):
@@ -162,48 +189,6 @@ def search_greedy_motif(dna,k,t):
         if compute_score(motifs) < compute_score(best_motifs):
             best_motifs = motifs
     return best_motifs
-
-# NEXT SECTION
-# Input:
-#     0.8 0.0 0.0 0.2
-#     0.0 0.6 0.2 0.0
-#     0.2 0.2 0.8 0.0
-#     0.0 0.2 0.0 0.8
-#     TTACCTTAAC
-#     GATGTCTGTC
-#     ACGGCGTTAG
-#     CCCTAACGAG
-#     CGTCAGAGGT
-# Output:
-#     ACCT
-#     ATGT
-#     GCGT
-#     ACGA
-#     AGGT
-def compute_motifs(profile_matrix, dna, k):
-    motifs = []
-    for i in range(len(dna)):
-        motifs.append(compute_profile_most_probable_kmer(dna[i], k, profile_matrix))
-    return motifs
-
-
-# Input:
-#     ACCTGTTTATTGCCTAAGTTCCGAACAAACCCAATATAGCCCGAGGGCCT
-#     5
-#     0.2 0.2 0.3 0.2 0.3
-#     0.4 0.3 0.1 0.5 0.1
-#     0.3 0.3 0.5 0.2 0.4
-#     0.1 0.2 0.1 0.1 0.2
-# Output:
-#     CCGAG
-profile_matrix = {"A": [0.4,0.3,0.0,0.1,0.0,0.9],
-                "C": [0.2,0.3,0.0,0.4,0.0,0.1],
-                "G": [0.1,0.3,1.0,0.3,0.5,0.0],
-                "T": [0.3,0.1,0.0,0.4,0.5,0.0]}
-print(compute_probability("GAGCTA", profile_matrix))
-
-# text = "ACCTGTTTATTGCCTAAGTTCCGAACAAACCCAATATAGCCCGAGGGCCT"
-# print(compute_profile_most_probable_kmer(text, 5, profile_matrix))
 
 #Hyperlinked DosR dataset
 dna = ["GCGCCCCGCCCGGACAGCCATGCGCTAACCCTGGCTTCGATGGCGCCGGCTCAGTTAGGGCCGGAAGTCCCCAATGTGGCAGACCTTTCGCCCCTGGCGGACGAATGACCCCAGTGGCCGGGACTTCAGGCCCTATCGGAGGGCTCCGGCGCGGTGGTCGGATTTGTCTGTGGAGGTTACACCCCAATCGCAAGGATGCATTATGACCAGCGAGCTGAGCCTGGTCGCCACTGGAAAGGGGAGCAACATC",
