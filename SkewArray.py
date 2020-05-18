@@ -7,6 +7,9 @@ def compute_skew_array(genome):
         skew_array.append(skew_array[i] + values[genome[i]])
     return skew_array
 
+#Determines the minimum position in the genome
+#The point where the number of occurences of 'C' is the least. 
+#These may be the possible location of OriC. 
 def compute_minimum_skew(genome):
     skew_array = compute_skew_array(genome)
     min_in_skey_array = min(skew_array)
